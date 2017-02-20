@@ -1,5 +1,4 @@
-﻿using System;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using NzbDrone.Common.Disk;
 using NzbDrone.Test.Common;
 using FluentAssertions;
@@ -58,6 +57,7 @@ namespace NzbDrone.Common.Test
         }
 
         [TestCase(@"C:\rooted\windows\path", @"C:\rooted\windows\")]
+        [TestCase(@"C:\rooted\windows\path\", @"C:\rooted\windows\")]
         [TestCase(@"C:\rooted", @"C:\")]
         [TestCase(@"C:", null)]
         [TestCase("/rooted/linux/path", "/rooted/linux/")]

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NLog;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Core.DataAugmentation.Scene;
 using NzbDrone.Core.IndexerSearch.Definitions;
+using NzbDrone.Core.MediaFiles;
 using NzbDrone.Core.Parser.Model;
 using NzbDrone.Core.Tv;
 
@@ -73,6 +73,11 @@ namespace NzbDrone.Core.Parser
 
             if (parsedEpisodeInfo == null)
             {
+                if (MediaFileExtensions.Extensions.Contains(Path.GetExtension(filename)))
+                {
+                    _logger.Warn("Unable to parse episode info from path {0}", filename);
+                }
+
                 return null;
             }
 
@@ -233,7 +238,7 @@ namespace NzbDrone.Core.Parser
                 info.FullSeason = false;
                 info.Quality = QualityParser.ParseQuality(title);
                 info.ReleaseGroup = Parser.ParseReleaseGroup(title);
-                info.Language = Parser.ParseLanguage(title);
+                info.Language = LanguageParser.ParseLanguage(title);
                 info.Special = true;
 
                 _logger.Debug("Found special episode {0} for title '{1}'", info, title);

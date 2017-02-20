@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -38,7 +37,7 @@ namespace NzbDrone.Core.Test.MediaFiles
                   .Returns(true);
 
             Mocker.GetMock<IImportApprovedEpisodes>()
-                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null))
+                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null, ImportMode.Auto))
                   .Returns(new List<ImportResult>());
         }
 
@@ -66,7 +65,7 @@ namespace NzbDrone.Core.Test.MediaFiles
                   .Returns(true);
 
             Subject.ProcessRootFolder(new DirectoryInfo(_droneFactory));
-            
+
             VerifyNoImport();
         }
 
@@ -109,7 +108,7 @@ namespace NzbDrone.Core.Test.MediaFiles
         public void should_not_delete_folder_if_no_files_were_imported()
         {
             Mocker.GetMock<IImportApprovedEpisodes>()
-                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), false, null))
+                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), false, null, ImportMode.Auto))
                   .Returns(new List<ImportResult>());
 
             Subject.ProcessRootFolder(new DirectoryInfo(_droneFactory));
@@ -133,7 +132,7 @@ namespace NzbDrone.Core.Test.MediaFiles
                   .Returns(imported);
 
             Mocker.GetMock<IImportApprovedEpisodes>()
-                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null))
+                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null, ImportMode.Auto))
                   .Returns(imported.Select(i => new ImportResult(i)).ToList());
 
             Subject.ProcessRootFolder(new DirectoryInfo(_droneFactory));
@@ -159,7 +158,7 @@ namespace NzbDrone.Core.Test.MediaFiles
                   .Returns(imported);
 
             Mocker.GetMock<IImportApprovedEpisodes>()
-                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null))
+                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null, ImportMode.Auto))
                   .Returns(imported.Select(i => new ImportResult(i)).ToList());
 
             Mocker.GetMock<IDetectSample>()
@@ -231,7 +230,7 @@ namespace NzbDrone.Core.Test.MediaFiles
                   .Returns(imported);
 
             Mocker.GetMock<IImportApprovedEpisodes>()
-                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null))
+                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null, ImportMode.Auto))
                   .Returns(imported.Select(i => new ImportResult(i)).ToList());
 
             Mocker.GetMock<IDetectSample>()
@@ -342,7 +341,7 @@ namespace NzbDrone.Core.Test.MediaFiles
                   .Returns(imported);
 
             Mocker.GetMock<IImportApprovedEpisodes>()
-                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null))
+                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, null, ImportMode.Auto))
                   .Returns(new List<ImportResult>());
 
             Mocker.GetMock<IDetectSample>()
@@ -365,13 +364,13 @@ namespace NzbDrone.Core.Test.MediaFiles
 
         private void VerifyNoImport()
         {
-            Mocker.GetMock<IImportApprovedEpisodes>().Verify(c => c.Import(It.IsAny<List<ImportDecision>>(), true, null),
+            Mocker.GetMock<IImportApprovedEpisodes>().Verify(c => c.Import(It.IsAny<List<ImportDecision>>(), true, null, ImportMode.Auto),
                 Times.Never());
         }
 
         private void VerifyImport()
         {
-            Mocker.GetMock<IImportApprovedEpisodes>().Verify(c => c.Import(It.IsAny<List<ImportDecision>>(), true, null),
+            Mocker.GetMock<IImportApprovedEpisodes>().Verify(c => c.Import(It.IsAny<List<ImportDecision>>(), true, null, ImportMode.Auto),
                 Times.Once());
         }
     }

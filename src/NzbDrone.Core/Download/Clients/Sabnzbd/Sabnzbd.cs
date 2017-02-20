@@ -30,7 +30,7 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
         }
 
         // patch can be a number (releases) or 'x' (git)
-        private static readonly Regex VersionRegex = new Regex(@"(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+|x)(?<candidate>.*)", RegexOptions.Compiled);
+        private static readonly Regex VersionRegex = new Regex(@"(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+|x)", RegexOptions.Compiled);
 
         protected override string AddFromNzbFile(RemoteEpisode remoteEpisode, string filename, byte[] fileContent)
         {
@@ -85,7 +85,9 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
 
                     queueItem.RemainingTime = null;
                 }
-                else if (sabQueueItem.Status == SabnzbdDownloadStatus.Queued || sabQueueItem.Status == SabnzbdDownloadStatus.Grabbing)
+                else if (sabQueueItem.Status == SabnzbdDownloadStatus.Queued ||
+                         sabQueueItem.Status == SabnzbdDownloadStatus.Grabbing ||
+                         sabQueueItem.Status == SabnzbdDownloadStatus.Propagating)
                 {
                     queueItem.Status = DownloadItemStatus.Queued;
                 }
@@ -116,7 +118,7 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
             }
             catch (DownloadClientException ex)
             {
-                _logger.Error(ex, ex.Message);
+                _logger.Error(ex);
                 return Enumerable.Empty<DownloadClientItem>();
             }
 
@@ -187,13 +189,7 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
             return historyItems;
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "SABnzbd";
-            }
-        }
+        public override string Name => "SABnzbd";
 
         public override IEnumerable<DownloadClientItem> GetItems()
         {
@@ -273,27 +269,103 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
             failures.AddIfNotNull(TestCategory());
         }
 
-        private ValidationFailure TestConnectionAndVersion()
+        private bool HasVersion(int major, int minor, int patch = 0)
         {
-            try
+            var rawVersion = _proxy.GetVersion(Settings);
+            var version = ParseVersion(rawVersion);
+
+            if (version == null)
             {
-                var version = _proxy.GetVersion(Settings);
-                var parsed = VersionRegex.Match(version);
+                return false;
+            }
 
-                if (!parsed.Success)
-                {
-                    return new ValidationFailure("Version", "Unknown Version: " + version);
-                }
+            if (version.Major > major)
+            {
+                return true;
+            }
+            else if (version.Major < major)
+            {
+                return false;
+            }
 
-                var major = Convert.ToInt32(parsed.Groups["major"].Value);
-                var minor = Convert.ToInt32(parsed.Groups["minor"].Value);
+            if (version.Minor > minor)
+            {
+                return true;
+            }
+            else if (version.Minor < minor)
+            {
+                return false;
+            }
 
-                if (major >= 1)
+            if (version.Build > patch)
+            {
+                return true;
+            }
+            else if (version.Build < patch)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private Version ParseVersion(string version)
+        {
+            var parsed = VersionRegex.Match(version);
+
+            int major;
+            int minor;
+            int patch;
+
+            if (parsed.Success)
+            {
+                major = Convert.ToInt32(parsed.Groups["major"].Value);
+                minor = Convert.ToInt32(parsed.Groups["minor"].Value);
+                patch = Convert.ToInt32(parsed.Groups["patch"].Value.Replace("x", "0"));
+            }
+
+            else
+            {
+                if (!version.Equals("develop", StringComparison.InvariantCultureIgnoreCase))
                 {
                     return null;
                 }
 
-                if (minor >= 7)
+                major = 1;
+                minor = 1;
+                patch = 0;
+            }
+
+            return new Version(major, minor, patch);
+        }
+
+        private ValidationFailure TestConnectionAndVersion()
+        {
+            try
+            {
+                var rawVersion = _proxy.GetVersion(Settings);
+                var version = ParseVersion(rawVersion);
+
+                if (version == null)
+                {
+                    return new ValidationFailure("Version", "Unknown Version: " + version);
+                }
+
+                if (rawVersion.Equals("develop", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return new NzbDroneValidationFailure("Version", "Sabnzbd develop version, assuming version 1.1.0 or higher.")
+                    {
+                        IsWarning = true,
+                        DetailedDescription = "Sonarr may not be able to support new features added to SABnzbd when running develop versions."
+                    };
+                }
+
+                if (version.Major >= 1)
+                {
+                    return null;
+                }
+
+                if (version.Minor >= 7)
                 {
                     return null;
                 }
@@ -302,7 +374,7 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, ex.Message);
+                _logger.Error(ex);
                 return new ValidationFailure("Host", "Unable to connect to SABnzbd");
             }
         }
@@ -332,7 +404,7 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
         private ValidationFailure TestGlobalConfig()
         {
             var config = _proxy.GetConfig(Settings);
-            if (config.Misc.pre_check)
+            if (config.Misc.pre_check && !HasVersion(1, 1))
             {
                 return new NzbDroneValidationFailure("", "Disable 'Check before download' option in Sabnbzd")
                 {

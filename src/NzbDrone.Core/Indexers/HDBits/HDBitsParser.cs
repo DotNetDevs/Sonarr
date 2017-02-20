@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
+﻿using System.Collections.Generic;
 using System.Net;
-using System.Web;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NzbDrone.Common.Http;
@@ -70,21 +67,21 @@ namespace NzbDrone.Core.Indexers.HDBits
             return torrentInfos.ToArray();
         }
 
-        private string GetDownloadUrl(long torrentId)
+        private string GetDownloadUrl(string torrentId)
         {
             var url = new HttpUri(_settings.BaseUrl)
                 .CombinePath("/download.php")
-                .AddQueryParam("id", torrentId.ToString())
+                .AddQueryParam("id", torrentId)
                 .AddQueryParam("passkey", _settings.ApiKey);
 
             return url.FullUri;
         }
 
-        private string GetInfoUrl(long torrentId)
+        private string GetInfoUrl(string torrentId)
         {
             var url = new HttpUri(_settings.BaseUrl)
                 .CombinePath("/details.php")
-                .AddQueryParam("id", torrentId.ToString());
+                .AddQueryParam("id", torrentId);
 
             return url.FullUri;
 

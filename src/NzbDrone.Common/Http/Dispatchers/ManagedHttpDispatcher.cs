@@ -1,7 +1,9 @@
 using System;
 using System.Net;
+using NzbDrone.Common.EnvironmentInfo;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Common.Http.Proxy;
+using NzbDrone.Common.Security;
 
 namespace NzbDrone.Common.Http.Dispatchers
 {
@@ -9,11 +11,13 @@ namespace NzbDrone.Common.Http.Dispatchers
     {
         private readonly IHttpProxySettingsProvider _proxySettingsProvider;
         private readonly ICreateManagedWebProxy _createManagedWebProxy;
+        private readonly IUserAgentBuilder _userAgentBuilder;
 
-        public ManagedHttpDispatcher(IHttpProxySettingsProvider proxySettingsProvider, ICreateManagedWebProxy createManagedWebProxy)
+        public ManagedHttpDispatcher(IHttpProxySettingsProvider proxySettingsProvider, ICreateManagedWebProxy createManagedWebProxy, IUserAgentBuilder userAgentBuilder)
         {
             _proxySettingsProvider = proxySettingsProvider;
             _createManagedWebProxy = createManagedWebProxy;
+            _userAgentBuilder = userAgentBuilder;
         }
 
         public HttpResponse GetResponse(HttpRequest request, CookieContainer cookies)
@@ -26,7 +30,7 @@ namespace NzbDrone.Common.Http.Dispatchers
             webRequest.AutomaticDecompression = DecompressionMethods.GZip;
 
             webRequest.Method = request.Method.ToString();
-            webRequest.UserAgent = request.UseSimplifiedUserAgent ? UserAgentBuilder.UserAgentSimplified : UserAgentBuilder.UserAgent;
+            webRequest.UserAgent = _userAgentBuilder.GetUserAgent(request.UseSimplifiedUserAgent);
             webRequest.KeepAlive = request.ConnectionKeepAlive;
             webRequest.AllowAutoRedirect = request.AllowAutoRedirect;
             webRequest.CookieContainer = cookies;
@@ -60,6 +64,11 @@ namespace NzbDrone.Common.Http.Dispatchers
             }
             catch (WebException e)
             {
+                if (e.Status == WebExceptionStatus.SecureChannelFailure && OsInfo.IsWindows)
+                {
+                    SecurityProtocolPolicy.DisableTls12();
+                }
+
                 httpWebResponse = (HttpWebResponse)e.Response;
 
                 if (httpWebResponse == null)
@@ -89,7 +98,7 @@ namespace NzbDrone.Common.Http.Dispatchers
                 webRequest.Proxy = _createManagedWebProxy.GetWebProxy(proxySettings);
             }
         }
-        
+
         protected virtual void AddRequestHeaders(HttpWebRequest webRequest, HttpHeader headers)
         {
             foreach (var header in headers)

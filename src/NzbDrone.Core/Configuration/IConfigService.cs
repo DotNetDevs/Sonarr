@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
 using NzbDrone.Core.MediaFiles;
-using NzbDrone.Core.Http;
-using NzbDrone.Common.Http;
 using NzbDrone.Common.Http.Proxy;
 
 namespace NzbDrone.Core.Configuration
@@ -35,6 +32,7 @@ namespace NzbDrone.Core.Configuration
         bool SkipFreeSpaceCheckWhenImporting { get; set; }
         bool CopyUsingHardlinks { get; set; }
         bool EnableMediaInfo { get; set; }
+        string ExtraFileExtensions { get; set; }
 
         //Permissions (Media Management)
         bool SetPermissionsLinux { get; set; }

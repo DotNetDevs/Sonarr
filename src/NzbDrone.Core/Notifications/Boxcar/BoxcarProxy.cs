@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 using FluentValidation.Results;
 using NLog;
@@ -53,16 +52,16 @@ namespace NzbDrone.Core.Notifications.Boxcar
             {
                 if (ex.Response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    _logger.Error(ex, "Access Token is invalid: " + ex.Message);
+                    _logger.Error(ex, "Access Token is invalid");
                     return new ValidationFailure("Token", "Access Token is invalid");
                 }
 
-                _logger.Error(ex, "Unable to send test message: " + ex.Message);
+                _logger.Error(ex, "Unable to send test message");
                 return new ValidationFailure("Token", "Unable to send test message");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Unable to send test message: " + ex.Message);
+                _logger.Error(ex, "Unable to send test message");
                 return new ValidationFailure("", "Unable to send test message");
             }
         }
@@ -77,6 +76,7 @@ namespace NzbDrone.Core.Notifications.Boxcar
                 request.AddParameter("notification[title]", title);
                 request.AddParameter("notification[long_message]", message);
                 request.AddParameter("notification[source_name]", "Sonarr");
+                request.AddParameter("notification[icon_url]", "https://raw.githubusercontent.com/Sonarr/Sonarr/7818f0c59b787312f0bcbc5c0eafc3c9dd7e5451/Logo/64.png");
 
                 client.ExecuteAndValidate(request);
             }
@@ -84,7 +84,7 @@ namespace NzbDrone.Core.Notifications.Boxcar
             {
                 if (ex.Response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    _logger.Error(ex, "Access Token is invalid: " + ex.Message);
+                    _logger.Error(ex, "Access Token is invalid");
                     throw;
                 }
 
